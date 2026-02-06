@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andon Board - Production Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <!-- Header Section -->
+    <div class="header">
+        <div class="header-left">
+            <span class="days-recordable">DAYS W/O RECORDABLES = <span id="recordable-days">1266</span></span>
+        </div>
+        <div class="header-metrics">
+            <span>P5: <span id="p5-count">-</span></span>
+            <span>/</span>
+            <span>NC = <span id="nc-count">8</span></span>
+            <span>/</span>
+            <span>OBQ = <span id="obq-count">0</span></span>
+            <span>/</span>
+            <span>TARGET: <span id="target-count">23</span></span>
+            <span>/</span>
+            <span>PAST DUE: <span id="pastdue-count">10</span></span>
+            <span>/</span>
+            <span>BUILT: <span id="built-count">42</span></span>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-container">
+        <table class="andon-table">
+            <thead>
+                <tr>
+                    <th>PLAN<br>BOARD</th>
+                    <th>ORDER<br>PICKING</th>
+                    <th>WELDING</th>
+                    <th>NDT</th>
+                    <th>HYDRO</th>
+                    <th>EA1</th>
+                    <th>CALIBRATION</th>
+                    <th>FINAL<br>ASSY</th>
+                    <th>QUALITY</th>
+                    <th>PACKING</th>
+                </tr>
+            </thead>
+            <tbody id="dashboard-body">
+                <!-- Rows will be generated dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer Section -->
+    <div class="footer">
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color bnc-free"></div>
+                <span>BNC<br>FREE</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color c-almost-full"></div>
+                <span>C ALMOST<br>FULL</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color c-full"></div>
+                <span>C<br>FULL</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color c-exceeded"></div>
+                <span>C<br>EXCEEDED</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color found"></div>
+                <span>(1)<br>FOUND</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color special-process"></div>
+                <span>SPECIAL<br>PROCESS</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color small-operational"></div>
+                <span>SMALL<br>OPERATIONAL</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color small-idle"></div>
+                <span>SMALL<br>IDLE</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color print-due"></div>
+                <span>*<br>PRINT<br>DUE ORDER</span>
+            </div>
+        </div>
+        <div class="footer-right">
+            <div class="time-display">NL-EDE TIME: <span id="nl-time">15:08</span></div>
+            <div class="refresh-time">REFRESHED <span id="refresh-time">0 MIN AGO</span></div>
+        </div>
+        <div class="footer-buttons">
+            <button class="footer-btn red-btn">NC HOLD: 15</button>
+            <button class="footer-btn blue-btn">OSP: 4</button>
+            <button class="footer-btn blue-btn">CI: 26</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
