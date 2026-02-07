@@ -1,151 +1,341 @@
 $(document).ready(function () {
-    // Dashboard data structure - EXACT match to screenshot
-    const dashboardData = [
-        {
-            planBoard: { label: 'SMALL', status: '9 / 15', color: 'green' },
-            orderPicking: { label: 'PICK 1 / 2', status: '', color: 'lightgray' },
-            welding: [
-                { label: 'SEFW', status: '4 / 4', color: 'orange' },
-                { label: 'MANUAL', status: '', color: 'lightgray' }
-            ],
-            ndt: { label: 'SMALL', status: '2 / 3', color: 'yellow' },
-            hydro: { label: 'SMALL 0 / 2', status: '7 / 2', color: 'red' },
-            ea1: { label: 'SMALL (1)', status: '4 / 10', color: 'green' },
-            calibration: { label: 'SMALL (4)', status: '', color: 'yellow' },
-            finalAssy: { label: 'O2', status: '0 / 2', color: 'green' },
-            quality: { label: 'Q CERTS', status: '10 / 2', color: 'red' },
-            packing: { label: 'PACK 2/2 (2)', status: '10 / 20', color: 'green' }
+    // ============================================
+    // CONFIGURATION: Static Labels (Constants)
+    // ============================================
+    const WORK_CENTER_CONFIG = {
+        planBoard: {
+            labels: ['SMALL', 'MEDIUM', 'LARGE', 'B28', 'SPARE']
         },
-        {
-            planBoard: { label: 'MEDIUM', status: '7 / 20', color: 'green' },
-            orderPicking: {},
-            welding: [
-                { label: 'ROBOT', status: '0 / 1', color: 'green' },
-                { label: 'NDEFW', status: '2 / 8', color: 'green' }
-            ],
-            ndt: {},
-            hydro: { label: 'MEDIUM', status: '0 / 2', color: 'green' },
-            ea1: { label: 'MEDIUM', status: '3 / 8', color: 'green' },
-            calibration: { label: 'MEDIUM (1)', status: '', color: 'yellow' },
-            finalAssy: [
-                { label: 'FA 7 / 0', status: '18 / 20', color: 'green' },
-                { label: 'SPARE 3 / 10', status: '', color: 'green' }
-            ],
-            quality: { label: 'QA VERIFY (3)', status: '2 / 2', color: 'yellow' },
-            packing: {}
+        orderPicking: {
+            labels: ['PICK 1 / 2', '', '', '', '']
         },
-        {
-            planBoard: { label: 'LARGE', status: '0 / 16', color: 'green' },
-            orderPicking: {},
-            welding: [
-                { label: 'MANUAL', status: '0 / 1', color: 'green' }
-            ],
-            ndt: { label: 'LARGE', status: '0 / 1', color: 'green' },
-            hydro: { label: 'LARGE', status: '1 / 2', color: 'green' },
-            ea1: { label: 'LARGE', status: '2 / 6', color: 'green' },
-            calibration: { label: 'LARGE (2)', status: '', color: 'yellow' },
-            finalAssy: [
-                { label: 'IBQ (2)', status: '0 / 2', color: 'brown' }
-            ],
-            quality: {},
-            packing: { label: 'SPARE 0 / 10', status: '', color: 'green' }
+        welding: {
+            isMultiCard: true,
+            labels: [
+                ['SEFW', 'MANUAL'],
+                ['ROBOT', 'NDEFW'],
+                ['MANUAL'],
+                ['POLNE'],
+                ['ROBOT', 'MANUAL']
+            ]
         },
-        {
-            planBoard: { label: 'B28', status: '0 / 15', color: 'green' },
-            orderPicking: {},
-            welding: [
-                { label: 'POLNE', status: '0 / 2', color: 'green' }
-            ],
-            ndt: {},
-            hydro: {},
-            ea1: {},
-            calibration: {},
-            finalAssy: {},
-            quality: {},
-            packing: { label: 'REP 1 / 6', status: '', color: 'green' }
+        ndt: {
+            labels: ['SMALL', '', 'LARGE', '', 'DYE PEN']
         },
-        {
-            planBoard: { label: 'SPARE', status: '3 / 20', color: 'green' },
-            orderPicking: {},
-            welding: [
-                { label: 'ROBOT', status: '2 / 2', color: 'orange' },
-                { label: 'MANUAL', status: '', color: 'lightgray' }
-            ],
-            ndt: { label: 'DYE PEN', status: '2 / 1', color: 'red' },
-            hydro: {},
-            ea1: { label: 'REP 3 / 6 *', status: '', color: 'green' },
-            calibration: {},
-            finalAssy: {},
-            quality: {},
-            packing: {}
+        hydro: {
+            labels: ['SMALL 0 / 2', 'MEDIUM', 'LARGE', '', '']
+        },
+        ea1: {
+            labels: ['SMALL (1)', 'MEDIUM', 'LARGE', '', 'REP 3 / 6 *']
+        },
+        calibration: {
+            labels: ['SMALL (4)', 'MEDIUM (1)', 'LARGE (2)', '', '']
+        },
+        finalAssy: {
+            isMultiCard: true,
+            labels: [
+                ['O2'],
+                ['FA 7 / 0', 'SPARE 3 / 10'],
+                ['IBQ (2)'],
+                [],
+                []
+            ]
+        },
+        quality: {
+            labels: ['Q CERTS', 'QA VERIFY (3)', '', '', '']
+        },
+        packing: {
+            labels: ['PACK 2/2 (2)', '', 'SPARE 0 / 10', 'REP 1 / 6', '']
         }
-    ];
+    };
 
-    // Function to render dashboard
+    // Column order for rendering
+    const COLUMN_ORDER = ['planBoard', 'orderPicking', 'welding', 'ndt', 'hydro', 'ea1', 'calibration', 'finalAssy', 'quality', 'packing'];
+    const ROW_COUNT = 5; // SMALL, MEDIUM, LARGE, B28, SPARE
+
+    // ============================================
+    // DATA STORAGE: Runtime Variables
+    // ============================================
+    let capacityData = {};
+    let actualData = {};
+    let colorCallback = defaultColorLogic;
+
+    // WIP Modal Data (mutable for backend updates)
+    let wipData = {
+        nc: [],
+        osp: [],
+        ci: []
+    };
+
+    let wipDetails = {};
+    let currentModalType = '';
+
+    // ============================================
+    // BACKEND DATA FUNCTIONS
+    // ============================================
+
+    /**
+     * Default color logic based on actual vs capacity ratio
+     * @param {number} actual - Actual value
+     * @param {number} capacity - Capacity value
+     * @returns {Object} { color: string }
+     */
+    function defaultColorLogic(actual, capacity) {
+        if (capacity === 0 || capacity === undefined) return { color: 'lightgray' };
+
+        const ratio = actual / capacity;
+
+        if (ratio > 1) return { color: 'red' };        // Over capacity
+        if (ratio >= 0.9) return { color: 'green' };   // Good
+        if (ratio >= 0.7) return { color: 'yellow' };  // Warning
+        if (ratio >= 0.5) return { color: 'orange' };  // Alert
+        return { color: 'lightgray' };                  // Low/No data
+    }
+
+    /**
+     * Initialize capacity values from backend.
+     * Call this ONCE on page load.
+     * 
+     * @param {Object} data - Work center data object with capacity arrays
+     * @example { planBoard: { capacity: [15, 20, 16] }, welding: { capacity: [[4, 0], [1, 8]] } }
+     */
+    function initializeCapacity(data) {
+        if (!data || typeof data !== 'object') {
+            console.error('Invalid data object for capacity initialization');
+            return;
+        }
+        capacityData = data;
+        renderDashboard();
+    }
+
+    /**
+     * Update actual values from backend.
+     * Call this on INTERVAL for real-time updates.
+     * Only updates the card values, does NOT re-render the entire dashboard.
+     * 
+     * @param {Object} data - Work center data object with actual arrays
+     * @param {Function} customColorCallback - Optional: (actual, capacity) => { color }
+     * @example { planBoard: { actual: [10, 18, 14] }, welding: { actual: [[3, 0], [1, 6]] } }
+     */
+    function updateActualValues(data, customColorCallback) {
+        if (!data || typeof data !== 'object') {
+            console.error('Invalid data object for actual values update');
+            return;
+        }
+        actualData = data;
+
+        if (customColorCallback) {
+            colorCallback = customColorCallback;
+        }
+
+        updateCardValues();
+
+        // Reset refresh counter
+        refreshCounter = 0;
+        updateRefreshTime();
+    }
+
+    /**
+     * Update only the card values (status and color) without re-rendering.
+     * Called on interval updates for efficiency.
+     */
+    function updateCardValues() {
+        for (let row = 0; row < ROW_COUNT; row++) {
+            COLUMN_ORDER.forEach((col, colIdx) => {
+                const config = WORK_CENTER_CONFIG[col];
+                const colCapacity = capacityData[col];
+                const colActual = actualData[col];
+
+                if (config.isMultiCard) {
+                    const labels = config.labels[row] || [];
+                    labels.forEach((label, idx) => {
+                        const cap = colCapacity?.capacity?.[row]?.[idx] ?? 0;
+                        const act = colActual?.actual?.[row]?.[idx] ?? 0;
+                        const colors = colorCallback(act, cap);
+                        const status = cap > 0 ? `${act} / ${cap}` : '';
+
+                        // Find and update the status element
+                        const $cell = $(`[data-row="${row}"][data-col="${col}"][data-idx="${idx}"] .cell-status`);
+                        if ($cell.length) {
+                            $cell.text(status);
+                            // Remove all status classes and add new one
+                            $cell.removeClass('status-green status-yellow status-orange status-red status-brown status-lightgray');
+                            $cell.addClass(`status-${colors.color}`);
+                        }
+                    });
+                } else {
+                    const label = config.labels[row] || '';
+                    if (label) {
+                        const cap = colCapacity?.capacity?.[row] ?? 0;
+                        const act = colActual?.actual?.[row] ?? 0;
+                        const colors = colorCallback(act, cap);
+                        const status = cap > 0 ? `${act} / ${cap}` : '';
+
+                        // Find and update the status element
+                        const $cell = $(`[data-row="${row}"][data-col="${col}"] .cell-status`);
+                        if ($cell.length) {
+                            $cell.text(status);
+                            $cell.removeClass('status-green status-yellow status-orange status-red status-brown status-lightgray');
+                            $cell.addClass(`status-${colors.color}`);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+
+
+    /**
+     * Update header metrics from backend.
+     * Uses field mapping for cleaner code.
+     * 
+     * @param {Object} data - Header metrics object
+     * @example { recordableDays: 1268, ncCount: 10, obqCount: 0, targetCount: 32 }
+     */
+    function updateHeader(data) {
+        if (!data || typeof data !== 'object') {
+            console.error('Invalid data for header update');
+            return;
+        }
+
+        const fieldMap = {
+            recordableDays: '#recordable-days',
+            ncCount: '#nc-count',
+            obqCount: '#obq-count',
+            targetCount: '#target-count',
+            pastDueCount: '#pastdue-count',
+            builtCount: '#built-count'
+        };
+
+        Object.entries(fieldMap).forEach(([key, selector]) => {
+            if (data[key] !== undefined) {
+                $(selector).text(data[key]);
+            }
+        });
+    }
+
+    /**
+     * Update WIP modal data from backend response.
+     * 
+     * @param {Object} response - Backend response object
+     * @param {string} response.type - Modal type: 'nc', 'osp', or 'ci'
+     * @param {Array} response.orders - Array of WIP order objects
+     * @param {Object} response.details - Optional: WIP details keyed by wipjob
+     * @param {Function} colorCallback - Optional: (order) => { statusClass }
+     */
+    function updateModalData(response, colorCallback) {
+        if (!response || !response.type || !response.orders) {
+            console.error('Invalid response for modal data update');
+            return;
+        }
+
+        const { type, orders, details } = response;
+
+        // Update wipData for this type
+        wipData[type] = orders;
+
+        // Update wipDetails if provided
+        if (details) {
+            Object.assign(wipDetails, details);
+        }
+
+        // If modal is currently open for this type, refresh the table
+        if (currentModalType === type) {
+            populateWIPTable(type);
+        }
+
+        // Apply optional color callback for status styling
+        if (colorCallback) {
+            orders.forEach(order => {
+                const styling = colorCallback(order);
+                order._styling = styling;
+            });
+        }
+    }
+
+    // ============================================
+    // RENDERING FUNCTIONS
+    // ============================================
+
+    /**
+     * Render the complete dashboard structure.
+     * Called ONCE on page load with config + capacity data.
+     * Adds data attributes to cells for targeted value updates.
+     */
     function renderDashboard() {
         const tbody = $('#dashboard-body');
         tbody.empty();
 
-        dashboardData.forEach(row => {
+        for (let row = 0; row < ROW_COUNT; row++) {
             const tr = $('<tr></tr>');
 
-            // Helper function to create cell
-            function createCell(data) {
+            COLUMN_ORDER.forEach((col, colIdx) => {
+                const config = WORK_CENTER_CONFIG[col];
+                const colCapacity = capacityData[col];
+                const colActual = actualData[col];
                 const td = $('<td></td>');
 
-                if (!data || (typeof data === 'object' && !data.label && !Array.isArray(data))) {
-                    td.addClass('empty-cell');
-                    return td;
-                }
+                if (config.isMultiCard) {
+                    const labels = config.labels[row] || [];
+                    if (labels.length === 0) {
+                        td.addClass('empty-cell');
+                    } else {
+                        labels.forEach((label, idx) => {
+                            const cap = colCapacity?.capacity?.[row]?.[idx] ?? 0;
+                            const act = colActual?.actual?.[row]?.[idx] ?? 0;
+                            const colors = colorCallback(act, cap);
+                            const status = cap > 0 ? `${act} / ${cap}` : '';
 
-                if (Array.isArray(data)) {
-                    data.forEach(item => {
-                        if (item.label || item.status) {
-                            const content = $('<div class="cell-content"></div>');
-                            if (item.label) {
-                                content.append(`<div class="cell-label">${item.label}</div>`);
-                            }
-                            if (item.status) {
-                                content.append(`<div class="cell-status status-${item.color}">${item.status}</div>`);
-                            } else if (item.color) {
-                                content.append(`<div class="cell-status status-${item.color}"></div>`);
+                            // Add data attributes for targeted updates
+                            const content = $('<div class="cell-content"></div>')
+                                .attr('data-row', row)
+                                .attr('data-col', col)
+                                .attr('data-idx', idx);
+                            content.append(`<div class="cell-label">${label}</div>`);
+                            if (status) {
+                                content.append(`<div class="cell-status status-${colors.color}">${status}</div>`);
+                            } else if (colors.color) {
+                                content.append(`<div class="cell-status status-${colors.color}"></div>`);
                             }
                             td.append(content);
-                        }
-                    });
+                        });
+                    }
                 } else {
-                    const content = $('<div class="cell-content"></div>');
-                    if (data.label) {
-                        content.append(`<div class="cell-label">${data.label}</div>`);
+                    const label = config.labels[row] || '';
+                    if (!label) {
+                        td.addClass('empty-cell');
+                    } else {
+                        const cap = colCapacity?.capacity?.[row] ?? 0;
+                        const act = colActual?.actual?.[row] ?? 0;
+                        const colors = colorCallback(act, cap);
+                        const status = cap > 0 ? `${act} / ${cap}` : '';
+
+                        // Add data attributes for targeted updates
+                        const content = $('<div class="cell-content"></div>')
+                            .attr('data-row', row)
+                            .attr('data-col', col);
+                        content.append(`<div class="cell-label">${label}</div>`);
+                        if (status) {
+                            content.append(`<div class="cell-status status-${colors.color}">${status}</div>`);
+                        } else if (colors.color) {
+                            content.append(`<div class="cell-status status-${colors.color}"></div>`);
+                        }
+                        td.append(content);
                     }
-                    if (data.status) {
-                        content.append(`<div class="cell-status status-${data.color}">${data.status}</div>`);
-                    } else if (data.color) {
-                        content.append(`<div class="cell-status status-${data.color}"></div>`);
-                    }
-                    td.append(content);
                 }
 
-                return td;
-            }
-
-            // Add cells for each column
-            tr.append(createCell(row.planBoard));
-            tr.append(createCell(row.orderPicking));
-            tr.append(createCell(row.welding));
-            tr.append(createCell(row.ndt));
-            tr.append(createCell(row.hydro));
-            tr.append(createCell(row.ea1));
-            tr.append(createCell(row.calibration));
-            tr.append(createCell(row.finalAssy));
-            tr.append(createCell(row.quality));
-            tr.append(createCell(row.packing));
+                tr.append(td);
+            });
 
             tbody.append(tr);
-        });
+        }
     }
 
-    // Update time display
+    // ============================================
+    // TIME & REFRESH FUNCTIONS
+    // ============================================
+
     function updateTime() {
         const now = new Date();
         const hours = String(now.getHours()).padStart(2, '0');
@@ -153,119 +343,15 @@ $(document).ready(function () {
         $('#nl-time').text(`${hours}:${minutes}`);
     }
 
-    // Update refresh time
     let refreshCounter = 0;
     function updateRefreshTime() {
         $('#refresh-time').text(`${refreshCounter} MIN AGO`);
     }
 
-    // Simulate data updates (optional - for demo purposes)
-    function simulateUpdate() {
-        // Random update to show dynamic capability
-        const randomRow = Math.floor(Math.random() * dashboardData.length);
-        const properties = ['planBoard', 'orderPicking', 'welding', 'ndt', 'hydro', 'ea1', 'calibration', 'finalAssy', 'quality', 'packing'];
-        const randomProp = properties[Math.floor(Math.random() * properties.length)];
-
-        // Reset refresh counter
-        refreshCounter = 0;
-        updateRefreshTime();
-
-        renderDashboard();
-    }
-
-    // Initialize dashboard
-    renderDashboard();
-    updateTime();
-    updateRefreshTime();
-
-    // Set header values to match screenshot
-    $('#recordable-days').text('1268');
-    $('#nc-count').html('<span style="color: #2ecc71; font-weight: bold;">10</span>');
-    $('#obq-count').text('0');
-    $('#target-count').text('32');
-    $('#pastdue-count').text('10');
-    $('#built-count').text('18');
-    $('#nl-time').text('11:01');
-    $('#refresh-time').text('2 MIN AGO');
-
-    // Update time every minute
-    setInterval(updateTime, 60000);
-
-    // Update refresh counter every minute
-    setInterval(() => {
-        refreshCounter++;
-        updateRefreshTime();
-    }, 60000);
-
-    // Optional: Simulate updates every 5 minutes
-    // setInterval(simulateUpdate, 300000);
-
     // ============================================
-    // MODAL FUNCTIONALITY
+    // MODAL FUNCTIONS
     // ============================================
 
-    // Sample WIP data
-    const wipData = {
-        nc: [
-            { wipjob: '45605410', cart_nr: '', compl_date: '17-12-2025', location: 'S_ElecAssy_Small', status: 'Reject' },
-            { wipjob: '46074699', cart_nr: '', compl_date: '29-01-2026', location: 'S_Calibrate_Small', status: 'Reject' },
-            { wipjob: '45992801', cart_nr: '', compl_date: '29-01-2026', location: 'S_Quality_Certs', status: 'Reject' },
-            { wipjob: '46380329', cart_nr: '', compl_date: '02-02-2026', location: 'S_Calibrate_Small', status: 'Reject' },
-            { wipjob: '46126037', cart_nr: '', compl_date: '02-02-2026', location: 'S_Calibrate_Large', status: 'Reject' },
-            { wipjob: '46561298', cart_nr: '', compl_date: '02-02-2026', location: 'S_Quality_Verify', status: 'Reject' },
-            { wipjob: '46561301', cart_nr: '', compl_date: '02-02-2026', location: 'S_Quality_Verify', status: 'Reject' },
-            { wipjob: '46561302', cart_nr: '', compl_date: '02-02-2026', location: 'S_Quality_Verify', status: 'Reject' },
-            { wipjob: '47002579', cart_nr: '', compl_date: '02-02-2026', location: 'S_Calibrate_Small', status: 'Reject' },
-            { wipjob: '46520788', cart_nr: '', compl_date: '03-02-2026', location: 'S_Calibrate_Large', status: 'Reject' },
-            { wipjob: '46353650', cart_nr: '', compl_date: '03-02-2026', location: 'S_Quality_IBQ', status: 'Reject' },
-            { wipjob: '46353645', cart_nr: '', compl_date: '03-02-2026', location: 'S_Quality_IBQ', status: 'Reject' },
-            { wipjob: '46440151', cart_nr: '', compl_date: '06-02-2026', location: 'S_Calibrate_Small', status: 'Reject' },
-            { wipjob: '45530954', cart_nr: '', compl_date: '24-04-2026', location: 'S_Pack', status: 'Reject' },
-            { wipjob: '45530953', cart_nr: '', compl_date: '24-04-2026', location: 'S_Pack', status: 'Reject' }
-        ],
-        osp: [
-            { wipjob: '46123456', cart_nr: '', compl_date: '15-02-2026', location: 'OSP_Location_1', status: 'Pending' },
-            { wipjob: '46234567', cart_nr: '', compl_date: '20-02-2026', location: 'OSP_Location_2', status: 'Pending' },
-            { wipjob: '46345678', cart_nr: '', compl_date: '25-02-2026', location: 'OSP_Location_3', status: 'Pending' },
-            { wipjob: '46456789', cart_nr: '', compl_date: '28-02-2026', location: 'OSP_Location_4', status: 'Pending' }
-        ],
-        ci: [
-            { wipjob: '47111111', cart_nr: '', compl_date: '10-03-2026', location: 'CI_Station_A', status: 'In Progress' },
-            { wipjob: '47222222', cart_nr: '', compl_date: '12-03-2026', location: 'CI_Station_B', status: 'In Progress' },
-            { wipjob: '47333333', cart_nr: '', compl_date: '15-03-2026', location: 'CI_Station_C', status: 'In Progress' }
-        ]
-    };
-
-    // Sample detail data for WIP orders
-    const wipDetails = {
-        '45605410': {
-            item: 'FT_F025S71727249',
-            itemDesc1: 'F025S114CCAZEZZZMCHTCV...',
-            itemDesc2: '1700I15AEZEZZZ',
-            salesOrder: '40109528',
-            line: '25',
-            trackId: '%823973664,%823973663',
-            sensorSerial: '15638420',
-            transmitterSerial: '19033278',
-            operationCode: '2EA1',
-            operationSeqNum: '710',
-            icNumber: '',
-            manufacturingDesc: 'SSC Small Electronic Assembly (...',
-            departmentCode: 'EA1',
-            departmentDesc: 'EDE SSC PUCK/J-BOX',
-            dateReleased: '08-01-2026',
-            scheduledStart: '16-12-2025',
-            scheduledCompletion: '16-01-2026',
-            lastMoveDate: '14-01-2026',
-            promisedDate: '01-01-2030',
-            requestedShipDate: '01-03-2026',
-            daysLeft: '-18'
-        }
-    };
-
-    let currentModalType = '';
-
-    // Function to open modal
     function openModal(type) {
         currentModalType = type;
         const titleMap = {
@@ -279,168 +365,80 @@ $(document).ready(function () {
         $('#wip-modal').fadeIn(300);
     }
 
-    // Function to populate WIP table
+    /**
+     * Create a WIP table row from data object.
+     * Reused by populateWIPTable and search filter.
+     */
+    function createWIPRow(row) {
+        return $('<tr>').data('wipjob', row.wipjob)
+            .append(`<td>${row.wipjob}</td>`)
+            .append(`<td>${row.cart_nr}</td>`)
+            .append(`<td>${row.compl_date}</td>`)
+            .append(`<td>${row.location}</td>`)
+            .append(`<td>${row.status}</td>`);
+    }
+
     function populateWIPTable(type) {
         const data = wipData[type] || [];
         const tbody = $('#wip-table-body');
         tbody.empty();
-
-        data.forEach(row => {
-            const tr = $('<tr>').data('wipjob', row.wipjob);
-            tr.append(`<td>${row.wipjob}</td>`);
-            tr.append(`<td>${row.cart_nr}</td>`);
-            tr.append(`<td>${row.compl_date}</td>`);
-            tr.append(`<td>${row.location}</td>`);
-            tr.append(`<td>${row.status}</td>`);
-            tbody.append(tr);
-        });
+        data.forEach(row => tbody.append(createWIPRow(row)));
     }
 
-    // Function to display WIP details
+    /**
+     * Reset the details panel to initial state.
+     */
+    function resetDetailsPanel() {
+        $('#details-grid').hide();
+        $('#no-selection-msg').show().text('Select a WIP order to view details');
+    }
+
     function displayWIPDetails(wipjob) {
         const details = wipDetails[wipjob];
-        const container = $('#details-container');
+        const $grid = $('#details-grid');
+        const $noSelection = $('#no-selection-msg');
 
         if (!details) {
-            container.html('<p class="no-selection">No details available for this WIP order</p>');
+            $grid.hide();
+            $noSelection.show().text('No details available for this WIP order');
             return;
         }
 
-        const detailsHTML = `
-            <div class="details-grid">
-                <div class="detail-row">
-                    <div class="detail-label">Item</div>
-                    <div class="detail-value">${details.item}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Item desc 1</div>
-                    <div class="detail-value">${details.itemDesc1}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Item desc 2</div>
-                    <div class="detail-value">${details.itemDesc2}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Sales order</div>
-                    <div class="detail-value">${details.salesOrder}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Line</div>
-                    <div class="detail-value">${details.line}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Track ID</div>
-                    <div class="detail-value">${details.trackId}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Sensor Serial</div>
-                    <div class="detail-value">${details.sensorSerial}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Transmitter Serial</div>
-                    <div class="detail-value">${details.transmitterSerial}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Operation Code</div>
-                    <div class="detail-value">${details.operationCode}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Operation Seq Num</div>
-                    <div class="detail-value">${details.operationSeqNum}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">IC Number</div>
-                    <div class="detail-value">${details.icNumber}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Manufacturing Desc</div>
-                    <div class="detail-value">${details.manufacturingDesc}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Department Code</div>
-                    <div class="detail-value">${details.departmentCode}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Department Desc</div>
-                    <div class="detail-value">${details.departmentDesc}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Date Released</div>
-                    <div class="detail-value">${details.dateReleased}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Scheduled Start Date</div>
-                    <div class="detail-value">${details.scheduledStart}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Scheduled Completion</div>
-                    <div class="detail-value">${details.scheduledCompletion}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Last Move Date</div>
-                    <div class="detail-value">${details.lastMoveDate}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Promised Date</div>
-                    <div class="detail-value">${details.promisedDate}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Requested Ship Date</div>
-                    <div class="detail-value">${details.requestedShipDate}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Days Left</div>
-                    <div class="detail-value">${details.daysLeft}</div>
-                </div>
-            </div>
-        `;
+        // Update each field value using data-field attributes
+        $('[data-field]').each(function () {
+            const field = $(this).data('field');
+            $(this).text(details[field] || '');
+        });
 
-        container.html(detailsHTML);
+        $noSelection.hide();
+        $grid.show();
     }
 
-    // Button click handlers
-    $('#nc-btn').on('click', function () {
-        openModal('nc');
+    // ============================================
+    // EVENT HANDLERS
+    // ============================================
+
+    // Footer button handlers (consolidated using data attribute)
+    $(document).on('click', '[data-modal-type]', function () {
+        openModal($(this).data('modal-type'));
     });
 
-    $('#osp-btn').on('click', function () {
-        openModal('osp');
-    });
-
-    $('#ci-btn').on('click', function () {
-        openModal('ci');
-    });
-
-    // Close modal
-    $('.modal-close').on('click', function () {
-        $('#wip-modal').fadeOut(300);
-        $('#details-container').html('<p class="no-selection">Select a WIP order to view details</p>');
-    });
-
-    // Close modal when clicking outside
-    $('#wip-modal').on('click', function (e) {
-        if (e.target.id === 'wip-modal') {
+    // Modal close handlers (using resetDetailsPanel)
+    $('.modal-close, #wip-modal').on('click', function (e) {
+        if (e.target === this || $(this).hasClass('modal-close')) {
             $('#wip-modal').fadeOut(300);
-            $('#details-container').html('<p class="no-selection">Select a WIP order to view details</p>');
+            resetDetailsPanel();
         }
     });
 
     // WIP table row click handler
     $(document).on('click', '#wip-table-body tr', function () {
-        // Remove selection from all rows
         $('#wip-table-body tr').removeClass('selected');
-
-        // Add selection to clicked row
         $(this).addClass('selected');
-
-        // Get wipjob from row data
-        const wipjob = $(this).data('wipjob');
-
-        // Display details
-        displayWIPDetails(wipjob);
+        displayWIPDetails($(this).data('wipjob'));
     });
 
-    // Search functionality
+    // Search functionality (simplified with createWIPRow)
     $('#search-btn').on('click', function () {
         const searchValue = $('#search-input').val().toLowerCase();
         const searchType = $('#search-type').val();
@@ -451,68 +449,121 @@ $(document).ready(function () {
         }
 
         const data = wipData[currentModalType] || [];
-        const filtered = data.filter(row => {
-            if (searchType === 'sensor') {
-                // In real implementation, search sensor serial from details
-                return row.wipjob.toLowerCase().includes(searchValue);
-            } else if (searchType === 'wipjob') {
-                return row.wipjob.toLowerCase().includes(searchValue);
-            } else if (searchType === 'location') {
-                return row.location.toLowerCase().includes(searchValue);
-            }
-            return false;
-        });
+        const fieldMap = { sensor: 'wipjob', wipjob: 'wipjob', location: 'location' };
+        const field = fieldMap[searchType] || 'wipjob';
 
-        const tbody = $('#wip-table-body');
-        tbody.empty();
+        const filtered = data.filter(row =>
+            (row[field] || '').toLowerCase().includes(searchValue)
+        );
 
-        filtered.forEach(row => {
-            const tr = $('<tr>').data('wipjob', row.wipjob);
-            tr.append(`<td>${row.wipjob}</td>`);
-            tr.append(`<td>${row.cart_nr}</td>`);
-            tr.append(`<td>${row.compl_date}</td>`);
-            tr.append(`<td>${row.location}</td>`);
-            tr.append(`<td>${row.status}</td>`);
-            tbody.append(tr);
-        });
+        const tbody = $('#wip-table-body').empty();
+        filtered.forEach(row => tbody.append(createWIPRow(row)));
     });
 
-    // Search on Enter key
     $('#search-input').on('keypress', function (e) {
-        if (e.which === 13) {
-            $('#search-btn').click();
-        }
+        if (e.which === 13) $('#search-btn').click();
     });
 
-    // Click handlers for dashboard cards
+    // Dashboard card click handlers
     $(document).on('click', '.cell-status', function () {
         const label = $(this).text().trim().toUpperCase();
-
-        // Determine which modal to open based on card content
-        if (label.includes('OSP')) {
-            openModal('osp');
-        } else if (label.includes('CI')) {
-            openModal('ci');
-        } else {
-            // Default to NC modal for all other cards
-            openModal('nc');
-        }
+        openModal(label.includes('OSP') ? 'osp' : label.includes('CI') ? 'ci' : 'nc');
     });
 
-    // Click handlers for header metrics
+    // Header section click handlers
     $(document).on('click', '.header-section', function () {
-        const text = $(this).text().trim().toUpperCase();
+        openModal('nc'); // All header clicks open NC modal
+    });
 
-        // Determine which modal to open based on header section
-        if (text.includes('NC') || text.includes('OBQ')) {
-            openModal('nc');
-        } else if (text.includes('BUILT') || text.includes('TARGET') || text.includes('PAST DUE')) {
-            openModal('nc'); // Default to NC modal
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+
+    // Initialize time display
+    updateTime();
+    updateRefreshTime();
+
+    // Set default header values using data attributes (will be replaced by backend data)
+    $('[data-default]').each(function () {
+        $(this).text($(this).data('default'));
+    });
+
+    // ============================================
+    // SAMPLE DATA - REMOVE THIS SECTION LATER
+    // ============================================
+    const SAMPLE_CAPACITY = {
+        planBoard: { capacity: [15, 20, 16, 15, 20] },
+        orderPicking: { capacity: [10, 0, 0, 0, 0] },
+        welding: { capacity: [[4, 8], [6, 8], [5], [3], [4, 6]] },
+        ndt: { capacity: [12, 0, 10, 0, 8] },
+        hydro: { capacity: [8, 10, 12, 0, 0] },
+        ea1: { capacity: [15, 12, 10, 0, 6] },
+        calibration: { capacity: [10, 8, 6, 0, 0] },
+        finalAssy: { capacity: [[5], [7, 10], [4], [], []] },
+        quality: { capacity: [8, 6, 0, 0, 0] },
+        packing: { capacity: [10, 0, 8, 6, 0] }
+    };
+
+    const SAMPLE_ACTUAL = {
+        planBoard: { actual: [12, 18, 14, 16, 15] },
+        orderPicking: { actual: [8, 0, 0, 0, 0] },
+        welding: { actual: [[3, 7], [5, 9], [4], [3], [2, 4]] },
+        ndt: { actual: [10, 0, 11, 0, 5] },
+        hydro: { actual: [7, 9, 13, 0, 0] },
+        ea1: { actual: [14, 10, 8, 0, 4] },
+        calibration: { actual: [9, 7, 5, 0, 0] },
+        finalAssy: { actual: [[4], [6, 8], [3], [], []] },
+        quality: { actual: [7, 5, 0, 0, 0] },
+        packing: { actual: [9, 0, 6, 5, 0] }
+    };
+
+    const SAMPLE_HEADER = {
+        recordableDays: 1268,
+        ncCount: 8,
+        obqCount: 2,
+        targetCount: 23,
+        pastDueCount: 10,
+        builtCount: 42
+    };
+
+    const SAMPLE_WIP = {
+        type: 'nc',
+        orders: [
+            { wipjob: '45605410', cart_nr: 'C001', compl_date: '17-12-2025', location: 'S_ElecAssy_Small', status: 'Reject' },
+            { wipjob: '45605411', cart_nr: 'C002', compl_date: '18-12-2025', location: 'Welding_Robot', status: 'Hold' },
+            { wipjob: '45605412', cart_nr: 'C003', compl_date: '19-12-2025', location: 'NDT_Large', status: 'Review' }
+        ],
+        details: {
+            '45605410': { item: 'SENSOR-A100', itemDesc1: 'Pressure Sensor', itemDesc2: 'High Accuracy', salesOrder: 'SO-12345', line: '1', trackId: 'TRK-001', sensorSerial: 'SN-A100-001', transmitterSerial: 'TX-001', operationCode: 'OP-100', operationSeqNum: '10', icNumber: 'IC-001', manufacturingDesc: 'Assembly Line 1', departmentCode: 'DEPT-01', departmentDesc: 'Electronics Assembly', dateReleased: '01-12-2025', scheduledStart: '05-12-2025', scheduledCompletion: '17-12-2025', lastMoveDate: '15-12-2025', promisedDate: '20-12-2025', requestedShipDate: '22-12-2025', daysLeft: '5' },
+            '45605411': { item: 'SENSOR-B200', itemDesc1: 'Temperature Sensor', itemDesc2: 'Industrial Grade', salesOrder: 'SO-12346', line: '2', trackId: 'TRK-002', sensorSerial: 'SN-B200-001', transmitterSerial: 'TX-002', operationCode: 'OP-200', operationSeqNum: '20', icNumber: 'IC-002', manufacturingDesc: 'Assembly Line 2', departmentCode: 'DEPT-02', departmentDesc: 'Welding Department', dateReleased: '02-12-2025', scheduledStart: '06-12-2025', scheduledCompletion: '18-12-2025', lastMoveDate: '16-12-2025', promisedDate: '21-12-2025', requestedShipDate: '23-12-2025', daysLeft: '6' }
         }
-    });
+    };
 
-    // Add pointer cursor to clickable cards and header sections
-    $(document).on('mouseenter', '.cell-status, .header-section', function () {
-        $(this).css('cursor', 'pointer');
-    });
+    // Initialize with sample data
+    initializeCapacity(SAMPLE_CAPACITY);
+    updateActualValues(SAMPLE_ACTUAL);
+    updateHeader(SAMPLE_HEADER);
+    updateModalData(SAMPLE_WIP);
+    // ============================================
+    // END SAMPLE DATA
+    // ============================================
+
+    // Start time intervals
+    setInterval(updateTime, 60000);
+    setInterval(() => {
+        refreshCounter++;
+        updateRefreshTime();
+    }, 60000);
+
+    // ============================================
+    // EXPOSE FUNCTIONS FOR AJAX CALLS
+    // ============================================
+    window.AndonDashboard = {
+        initializeCapacity: initializeCapacity,
+        updateActualValues: updateActualValues,
+        updateHeader: updateHeader,
+        updateModalData: updateModalData,
+        defaultColorLogic: defaultColorLogic
+    };
 });
+

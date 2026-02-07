@@ -13,31 +13,32 @@
     <!-- Header Section -->
     <div class="header">
         <div class="header-section">
-            <span class="days-recordable">DAYS W/O RECORDABLES = <span id="recordable-days">1266</span></span>
+            <span class="days-recordable">DAYS W/O RECORDABLES = <span id="recordable-days"
+                    data-default="--">1266</span></span>
         </div>
         <div class="header-divider"></div>
         <div class="header-section">
-            <span>P5: <span id="p5-count">-</span></span>
+            <span>P5: <span id="p5-count" data-default="-">-</span></span>
         </div>
         <div class="header-divider"></div>
         <div class="header-section">
-            <span>NC = <span id="nc-count">8</span></span>
+            <span>NC = <span id="nc-count" data-default="--">8</span></span>
         </div>
         <div class="header-divider"></div>
         <div class="header-section">
-            <span>OBQ = <span id="obq-count">0</span></span>
+            <span>OBQ = <span id="obq-count" data-default="--">0</span></span>
         </div>
         <div class="header-divider"></div>
         <div class="header-section">
-            <span>TARGET: <span id="target-count">23</span></span>
+            <span>TARGET: <span id="target-count" data-default="--">23</span></span>
         </div>
         <div class="header-divider"></div>
         <div class="header-section">
-            <span>PAST DUE: <span id="pastdue-count">10</span></span>
+            <span>PAST DUE: <span id="pastdue-count" data-default="--">10</span></span>
         </div>
         <div class="header-divider"></div>
         <div class="header-section">
-            <span>BUILT: <span id="built-count">42</span></span>
+            <span>BUILT: <span id="built-count" data-default="--">42</span></span>
         </div>
     </div>
 
@@ -105,13 +106,13 @@
             </div>
         </div>
         <div class="footer-right">
-            <div class="time-display">NL-EDE TIME: <span id="nl-time">15:08</span></div>
-            <div class="refresh-time">REFRESHED <span id="refresh-time">0 MIN AGO</span></div>
+            <div class="time-display">NL-EDE TIME: <span id="nl-time" data-default="--:--">15:08</span></div>
+            <div class="refresh-time">REFRESHED <span id="refresh-time" data-default="-- MIN AGO">0 MIN AGO</span></div>
         </div>
         <div class="footer-buttons">
-            <button class="footer-btn red-btn" id="nc-btn">NC HOLD: 15</button>
-            <button class="footer-btn blue-btn" id="osp-btn">OSP: 4</button>
-            <button class="footer-btn blue-btn" id="ci-btn">CI: 26</button>
+            <button class="footer-btn red-btn" id="nc-btn" data-modal-type="nc">NC HOLD: 15</button>
+            <button class="footer-btn blue-btn" id="osp-btn" data-modal-type="osp">OSP: 4</button>
+            <button class="footer-btn blue-btn" id="ci-btn" data-modal-type="ci">CI: 26</button>
         </div>
     </div>
 
@@ -155,7 +156,93 @@
                 <!-- Right Side: WIP Details -->
                 <div class="modal-right">
                     <div class="details-container" id="details-container">
-                        <p class="no-selection">Select a WIP order to view details</p>
+                        <div class="details-grid" id="details-grid" style="display: none;">
+                            <div class="detail-row">
+                                <div class="detail-label">Item</div>
+                                <div class="detail-value" data-field="item"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Item desc 1</div>
+                                <div class="detail-value" data-field="itemDesc1"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Item desc 2</div>
+                                <div class="detail-value" data-field="itemDesc2"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Sales order</div>
+                                <div class="detail-value" data-field="salesOrder"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Line</div>
+                                <div class="detail-value" data-field="line"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Track ID</div>
+                                <div class="detail-value" data-field="trackId"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Sensor Serial</div>
+                                <div class="detail-value" data-field="sensorSerial"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Transmitter Serial</div>
+                                <div class="detail-value" data-field="transmitterSerial"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Operation Code</div>
+                                <div class="detail-value" data-field="operationCode"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Operation Seq Num</div>
+                                <div class="detail-value" data-field="operationSeqNum"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">IC Number</div>
+                                <div class="detail-value" data-field="icNumber"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Manufacturing Desc</div>
+                                <div class="detail-value" data-field="manufacturingDesc"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Department Code</div>
+                                <div class="detail-value" data-field="departmentCode"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Department Desc</div>
+                                <div class="detail-value" data-field="departmentDesc"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Date Released</div>
+                                <div class="detail-value" data-field="dateReleased"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Scheduled Start Date</div>
+                                <div class="detail-value" data-field="scheduledStart"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Scheduled Completion</div>
+                                <div class="detail-value" data-field="scheduledCompletion"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Last Move Date</div>
+                                <div class="detail-value" data-field="lastMoveDate"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Promised Date</div>
+                                <div class="detail-value" data-field="promisedDate"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Requested Ship Date</div>
+                                <div class="detail-value" data-field="requestedShipDate"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Days Left</div>
+                                <div class="detail-value" data-field="daysLeft"></div>
+                            </div>
+                        </div>
+                        <p class="no-selection" id="no-selection-msg">Select a WIP order to view details</p>
                     </div>
                 </div>
             </div>
