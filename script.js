@@ -60,15 +60,7 @@ $(document).ready(function () {
     let actualData = {};
     let colorCallback = defaultColorLogic;
 
-    // WIP Modal Data (mutable for backend updates)
-    let wipData = {
-        nc: [],
-        osp: [],
-        ci: []
-    };
-
-    let wipDetails = {};
-    let currentModalType = '';
+    // WIP Modal variables removed - openModal() will handle all logic
 
     // ============================================
     // BACKEND DATA FUNCTIONS
@@ -214,45 +206,7 @@ $(document).ready(function () {
             }
         });
     }
-
-    /**
-     * Update WIP modal data from backend response.
-     * 
-     * @param {Object} response - Backend response object
-     * @param {string} response.type - Modal type: 'nc', 'osp', or 'ci'
-     * @param {Array} response.orders - Array of WIP order objects
-     * @param {Object} response.details - Optional: WIP details keyed by wipjob
-     * @param {Function} colorCallback - Optional: (order) => { statusClass }
-     */
-    function updateModalData(response, colorCallback) {
-        if (!response || !response.type || !response.orders) {
-            console.error('Invalid response for modal data update');
-            return;
-        }
-
-        const { type, orders, details } = response;
-
-        // Update wipData for this type
-        wipData[type] = orders;
-
-        // Update wipDetails if provided
-        if (details) {
-            Object.assign(wipDetails, details);
-        }
-
-        // If modal is currently open for this type, refresh the table
-        if (currentModalType === type) {
-            populateWIPTable(type);
-        }
-
-        // Apply optional color callback for status styling
-        if (colorCallback) {
-            orders.forEach(order => {
-                const styling = colorCallback(order);
-                order._styling = styling;
-            });
-        }
-    }
+    // updateModalData removed - openModal() will handle all modal logic
 
     // ============================================
     // RENDERING FUNCTIONS
@@ -352,66 +306,14 @@ $(document).ready(function () {
     // MODAL FUNCTIONS
     // ============================================
 
-    function openModal(type) {
-        currentModalType = type;
-        const titleMap = {
-            'nc': 'NC HOLD - WIP Order Details',
-            'osp': 'OSP - WIP Order Details',
-            'ci': 'CI - WIP Order Details'
-        };
-
-        $('#modal-title').text(titleMap[type]);
-        populateWIPTable(type);
-        $('#wip-modal').fadeIn(300);
-    }
-
     /**
-     * Create a WIP table row from data object.
-     * Reused by populateWIPTable and search filter.
+     * Opens modal for given type.
+     * TODO: Implement modal logic here
+     * @param {string} type - 'nc', 'osp', or 'ci'
      */
-    function createWIPRow(row) {
-        return $('<tr>').data('wipjob', row.wipjob)
-            .append(`<td>${row.wipjob}</td>`)
-            .append(`<td>${row.cart_nr}</td>`)
-            .append(`<td>${row.compl_date}</td>`)
-            .append(`<td>${row.location}</td>`)
-            .append(`<td>${row.status}</td>`);
-    }
-
-    function populateWIPTable(type) {
-        const data = wipData[type] || [];
-        const tbody = $('#wip-table-body');
-        tbody.empty();
-        data.forEach(row => tbody.append(createWIPRow(row)));
-    }
-
-    /**
-     * Reset the details panel to initial state.
-     */
-    function resetDetailsPanel() {
-        $('#details-grid').hide();
-        $('#no-selection-msg').show().text('Select a WIP order to view details');
-    }
-
-    function displayWIPDetails(wipjob) {
-        const details = wipDetails[wipjob];
-        const $grid = $('#details-grid');
-        const $noSelection = $('#no-selection-msg');
-
-        if (!details) {
-            $grid.hide();
-            $noSelection.show().text('No details available for this WIP order');
-            return;
-        }
-
-        // Update each field value using data-field attributes
-        $('[data-field]').each(function () {
-            const field = $(this).data('field');
-            $(this).text(details[field] || '');
-        });
-
-        $noSelection.hide();
-        $grid.show();
+    function callpopupAction(type) {
+        // TODO: Write modal logic
+        console.log('callpopupAction called with type:', type);
     }
 
     // ============================================
@@ -420,59 +322,18 @@ $(document).ready(function () {
 
     // Footer button handlers (consolidated using data attribute)
     $(document).on('click', '[data-modal-type]', function () {
-        openModal($(this).data('modal-type'));
-    });
-
-    // Modal close handlers (using resetDetailsPanel)
-    $('.modal-close, #wip-modal').on('click', function (e) {
-        if (e.target === this || $(this).hasClass('modal-close')) {
-            $('#wip-modal').fadeOut(300);
-            resetDetailsPanel();
-        }
-    });
-
-    // WIP table row click handler
-    $(document).on('click', '#wip-table-body tr', function () {
-        $('#wip-table-body tr').removeClass('selected');
-        $(this).addClass('selected');
-        displayWIPDetails($(this).data('wipjob'));
-    });
-
-    // Search functionality (simplified with createWIPRow)
-    $('#search-btn').on('click', function () {
-        const searchValue = $('#search-input').val().toLowerCase();
-        const searchType = $('#search-type').val();
-
-        if (!searchValue) {
-            populateWIPTable(currentModalType);
-            return;
-        }
-
-        const data = wipData[currentModalType] || [];
-        const fieldMap = { sensor: 'wipjob', wipjob: 'wipjob', location: 'location' };
-        const field = fieldMap[searchType] || 'wipjob';
-
-        const filtered = data.filter(row =>
-            (row[field] || '').toLowerCase().includes(searchValue)
-        );
-
-        const tbody = $('#wip-table-body').empty();
-        filtered.forEach(row => tbody.append(createWIPRow(row)));
-    });
-
-    $('#search-input').on('keypress', function (e) {
-        if (e.which === 13) $('#search-btn').click();
+        callpopupAction($(this).data('modal-type'));
     });
 
     // Dashboard card click handlers
     $(document).on('click', '.cell-status', function () {
         const label = $(this).text().trim().toUpperCase();
-        openModal(label.includes('OSP') ? 'osp' : label.includes('CI') ? 'ci' : 'nc');
+        callpopupAction(label.includes('OSP') ? 'osp' : label.includes('CI') ? 'ci' : 'nc');
     });
 
     // Header section click handlers
     $(document).on('click', '.header-section', function () {
-        openModal('nc'); // All header clicks open NC modal
+        callpopupAction('nc');
     });
 
     // ============================================
@@ -526,24 +387,10 @@ $(document).ready(function () {
         builtCount: 42
     };
 
-    const SAMPLE_WIP = {
-        type: 'nc',
-        orders: [
-            { wipjob: '45605410', cart_nr: 'C001', compl_date: '17-12-2025', location: 'S_ElecAssy_Small', status: 'Reject' },
-            { wipjob: '45605411', cart_nr: 'C002', compl_date: '18-12-2025', location: 'Welding_Robot', status: 'Hold' },
-            { wipjob: '45605412', cart_nr: 'C003', compl_date: '19-12-2025', location: 'NDT_Large', status: 'Review' }
-        ],
-        details: {
-            '45605410': { item: 'SENSOR-A100', itemDesc1: 'Pressure Sensor', itemDesc2: 'High Accuracy', salesOrder: 'SO-12345', line: '1', trackId: 'TRK-001', sensorSerial: 'SN-A100-001', transmitterSerial: 'TX-001', operationCode: 'OP-100', operationSeqNum: '10', icNumber: 'IC-001', manufacturingDesc: 'Assembly Line 1', departmentCode: 'DEPT-01', departmentDesc: 'Electronics Assembly', dateReleased: '01-12-2025', scheduledStart: '05-12-2025', scheduledCompletion: '17-12-2025', lastMoveDate: '15-12-2025', promisedDate: '20-12-2025', requestedShipDate: '22-12-2025', daysLeft: '5' },
-            '45605411': { item: 'SENSOR-B200', itemDesc1: 'Temperature Sensor', itemDesc2: 'Industrial Grade', salesOrder: 'SO-12346', line: '2', trackId: 'TRK-002', sensorSerial: 'SN-B200-001', transmitterSerial: 'TX-002', operationCode: 'OP-200', operationSeqNum: '20', icNumber: 'IC-002', manufacturingDesc: 'Assembly Line 2', departmentCode: 'DEPT-02', departmentDesc: 'Welding Department', dateReleased: '02-12-2025', scheduledStart: '06-12-2025', scheduledCompletion: '18-12-2025', lastMoveDate: '16-12-2025', promisedDate: '21-12-2025', requestedShipDate: '23-12-2025', daysLeft: '6' }
-        }
-    };
-
     // Initialize with sample data
     initializeCapacity(SAMPLE_CAPACITY);
     updateActualValues(SAMPLE_ACTUAL);
     updateHeader(SAMPLE_HEADER);
-    updateModalData(SAMPLE_WIP);
     // ============================================
     // END SAMPLE DATA
     // ============================================
@@ -562,7 +409,7 @@ $(document).ready(function () {
         initializeCapacity: initializeCapacity,
         updateActualValues: updateActualValues,
         updateHeader: updateHeader,
-        updateModalData: updateModalData,
+        callpopupAction: callpopupAction,
         defaultColorLogic: defaultColorLogic
     };
 });
