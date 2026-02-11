@@ -177,19 +177,51 @@ $(document).ready(function () {
     }
 
 
+    /**
+     * Calculate current period based on fiscal year starting in October.
+     * October = P1, November = P2, ..., September = P12
+     * @returns {number} Period number (1-12)
+     */
+    function calculateCurrentPeriod() {
+        const now = new Date();
+        const currentMonth = now.getMonth(); // 0 = January, 9 = October
+
+        // October (9) = P1, November (10) = P2, December (11) = P3
+        // January (0) = P4, February (1) = P5, ..., September (8) = P12
+        if (currentMonth >= 9) {
+            // October, November, December
+            return currentMonth - 9 + 1; // Oct=1, Nov=2, Dec=3
+        } else {
+            // January through September
+            return currentMonth + 4; // Jan=4, Feb=5, ..., Sep=12
+        }
+    }
 
     /**
      * Update header metrics from backend.
      * Uses field mapping for cleaner code.
      * 
+     * IMPORTANT: The NC and OBQ counts should be FILTERED BY PERIOD on the backend
+     * before being sent to this function. The period is calculated based on fiscal
+     * year starting in October (P1) through September (P12).
+     * 
+     * Example period mapping:
+     * - October = P1, November = P2, December = P3
+     * - January = P4, February = P5, ..., September = P12
+     * 
      * @param {Object} data - Header metrics object
      * @example { recordableDays: 1268, ncCount: 10, obqCount: 0, targetCount: 32 }
+     *          where ncCount and obqCount are for the CURRENT PERIOD only
      */
     function updateHeader(data) {
         if (!data || typeof data !== 'object') {
             console.error('Invalid data for header update');
             return;
         }
+
+        // Calculate and display current period
+        const currentPeriod = calculateCurrentPeriod();
+        $('#p5-count').text(`P${currentPeriod}`);
 
         const fieldMap = {
             recordableDays: '#recordable-days',
@@ -307,33 +339,52 @@ $(document).ready(function () {
     // ============================================
 
     /**
-     * Opens modal for given type.
-     * TODO: Implement modal logic here
-     * @param {string} type - 'nc', 'osp', or 'ci'
+     * Opens modal for given type with detailed context.
+     * 
+     * @param {string} dataFlag - Required. Indicates the source of the click:
+     *                            - "CELL" for table cell clicks
+     *                            - "NC", "OBQ", "TARGET", "PASTDUE", "BUILT" for header clicks
+     *                            - "NCHOLD", "OSP", "CI" for footer button clicks
+     * @param {string} column - Optional. Only for CELL clicks. The column name (e.g., "welding", "planBoard")
+     * @param {string} label - Optional. Only for CELL clicks. The label name of the clicked item (e.g., "SEFW", "SMALL")
+     * 
+     * @example
+     * // Header click
+     * callpopupAction("NC");
+     * 
+     * // Footer click
+     * callpopupAction("NCHOLD");
+     * 
+     * // Cell click
+     * callpopupAction("CELL", "welding", "SEFW");
      */
-    function callpopupAction(type) {
+    function callpopupAction(dataFlag, column, label) {
         // TODO: Write modal logic
-        console.log('callpopupAction called with type:', type);
+        console.log('callpopupAction called with:', { dataFlag, column, label });
+
+        // Testing alert
+        let message = `dataFlag: ${dataFlag}`;
+        if (column) message += `\ncolumn: ${column}`;
+        if (label) message += `\nlabel: ${label}`;
+        alert(message);
     }
 
     // ============================================
     // EVENT HANDLERS
     // ============================================
 
-    // Footer button handlers (consolidated using data attribute)
+    // Footer button and header section handlers (consolidated using data attribute)
     $(document).on('click', '[data-modal-type]', function () {
-        callpopupAction($(this).data('modal-type'));
+        const dataFlag = $(this).data('modal-type');
+        callpopupAction(dataFlag);
     });
 
-    // Dashboard card click handlers
+    // Dashboard card click handlers - pass CELL with column and label
     $(document).on('click', '.cell-status', function () {
-        const label = $(this).text().trim().toUpperCase();
-        callpopupAction(label.includes('OSP') ? 'osp' : label.includes('CI') ? 'ci' : 'nc');
-    });
-
-    // Header section click handlers
-    $(document).on('click', '.header-section', function () {
-        callpopupAction('nc');
+        const $content = $(this).closest('.cell-content');
+        const column = $content.data('col');
+        const label = $content.find('.cell-label').text().trim();
+        callpopupAction('CELL', column, label);
     });
 
     // ============================================

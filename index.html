@@ -17,27 +17,24 @@
                     data-default="--">1266</span></span>
         </div>
         <div class="header-divider"></div>
-        <div class="header-section">
-            <span>P5: <span id="p5-count" data-default="-">-</span></span>
+        <div class="header-section period-section">
+            <span class="period-label"><span id="p5-count" data-default="P-">P5</span>:</span>
+            <span class="period-metric clickable-metric" data-modal-type="NC">NC = <span id="nc-count"
+                    data-default="--">8</span></span>
+            <span class="period-metric-divider">/</span>
+            <span class="period-metric clickable-metric" data-modal-type="OBQ">OBQ = <span id="obq-count"
+                    data-default="--">0</span></span>
         </div>
         <div class="header-divider"></div>
-        <div class="header-section">
-            <span>NC = <span id="nc-count" data-default="--">8</span></span>
-        </div>
-        <div class="header-divider"></div>
-        <div class="header-section">
-            <span>OBQ = <span id="obq-count" data-default="--">0</span></span>
-        </div>
-        <div class="header-divider"></div>
-        <div class="header-section">
+        <div class="header-section" data-modal-type="TARGET">
             <span>TARGET: <span id="target-count" data-default="--">23</span></span>
         </div>
         <div class="header-divider"></div>
-        <div class="header-section">
+        <div class="header-section" data-modal-type="PASTDUE">
             <span>PAST DUE: <span id="pastdue-count" data-default="--">10</span></span>
         </div>
         <div class="header-divider"></div>
-        <div class="header-section">
+        <div class="header-section" data-modal-type="BUILT">
             <span>BUILT: <span id="built-count" data-default="--">42</span></span>
         </div>
     </div>
@@ -110,9 +107,9 @@
             <div class="refresh-time">REFRESHED <span id="refresh-time" data-default="-- MIN AGO">0 MIN AGO</span></div>
         </div>
         <div class="footer-buttons">
-            <button class="footer-btn red-btn" id="nc-btn" data-modal-type="nc">NC HOLD: 15</button>
-            <button class="footer-btn blue-btn" id="osp-btn" data-modal-type="osp">OSP: 4</button>
-            <button class="footer-btn blue-btn" id="ci-btn" data-modal-type="ci">CI: 26</button>
+            <button class="footer-btn red-btn" id="nc-btn" data-modal-type="NCHOLD">NC HOLD: 15</button>
+            <button class="footer-btn blue-btn" id="osp-btn" data-modal-type="OSP">OSP: 4</button>
+            <button class="footer-btn blue-btn" id="ci-btn" data-modal-type="CI">CI: 26</button>
         </div>
     </div>
 
