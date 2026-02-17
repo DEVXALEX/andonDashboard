@@ -37,11 +37,16 @@ $(document).ready(function () {
     }
 
     function groupBucketsByPosition(buckets) {
+        console.log("Bucket Input");
+        console.log(buckets);
         const groups = {};
         buckets.forEach(bucket => {
             if (!groups[bucket.position]) groups[bucket.position] = [];
             groups[bucket.position].push(bucket);
         });
+        console.log("groupBucketsByPosition");
+        console.log(groups);
+        console.log("groupBucketsByPosition");
         return groups;
     }
 
@@ -60,6 +65,20 @@ $(document).ready(function () {
         }
         workCentersData = parsedData;
         renderDashboard();
+        updateCardValues();
+    }
+
+    function parseActualData(data) {
+        if (!data || !data.WorkCenter || !data.BucketName || !data.Actual) {
+            console.error('Invalid AJAX actual data structure');
+            return null;
+        }
+        const result = {};
+        for (let i = 0; i < data.WorkCenter.length; i++) {
+            if (!result[data.WorkCenter[i]]) result[data.WorkCenter[i]] = {};
+            result[data.WorkCenter[i]][data.BucketName[i]] = data.Actual[i];
+        }
+        return result;
     }
 
     function updateActualValues(data) {
@@ -77,35 +96,21 @@ $(document).ready(function () {
         if (!workCentersData || !workCentersData.workCenters) return;
 
         workCentersData.workCenters.forEach(wc => {
-            const positionGroups = groupBucketsByPosition(wc.buckets);
-            const colActual = actualData[wc.name];
+            const colActual = actualData[wc.name]; // Actual values for the work center
 
-            for (let row = 0; row < ROW_COUNT; row++) {
-                const bucketsAtPosition = positionGroups[row + 1] || [];
-                const isMultiCard = bucketsAtPosition.length > 1;
+            wc.buckets.forEach(bucket => {
+                const cap = bucket.capacity || 0;
+                const actVal = colActual?.[bucket.name] ?? 0;
+                const colors = getStatusColor(actVal, cap);
+                const status = cap > 0 ? `${actVal} / ${cap}` : '';
+                const $cell = $(`[data-col="${wc.name}"][data-bucket="${bucket.name}"] .cell-status`);
 
-                bucketsAtPosition.forEach((bucket, idx) => {
-                    const cap = bucket.capacity || 0;
-                    let actVal;
-
-                    if (isMultiCard) {
-                        actVal = colActual?.actual?.[row]?.[idx] ?? 0;
-                    } else {
-                        const act = colActual?.actual?.[row];
-                        actVal = Array.isArray(act) ? act[0] : (act ?? 0);
-                    }
-
-                    const colors = getStatusColor(actVal, cap);
-                    const status = cap > 0 ? `${actVal} / ${cap}` : '';
-                    const $cell = $(`[data-row="${row}"][data-col="${wc.name}"][data-idx="${idx}"] .cell-status`);
-
-                    if ($cell.length) {
-                        $cell.text(status);
-                        $cell.removeClass('status-green status-yellow status-orange status-red status-brown status-lightgray');
-                        $cell.addClass(`status-${colors.color}`);
-                    }
-                });
-            }
+                if ($cell.length) {
+                    $cell.text(status);
+                    $cell.removeClass('status-green status-yellow status-orange status-red status-brown status-lightgray');
+                    $cell.addClass(`status-${colors.color}`);
+                }
+            });
         });
     }
 
@@ -161,9 +166,8 @@ $(document).ready(function () {
                 } else {
                     bucketsAtPosition.forEach((bucket, idx) => {
                         const content = $('<div class="cell-content"></div>')
-                            .attr('data-row', row)
                             .attr('data-col', wc.name)
-                            .attr('data-idx', idx);
+                            .attr('data-bucket', bucket.name);
                         content.append(`<div class="cell-label">${bucket.name}</div>`);
                         content.append('<div class="cell-status"></div>');
                         td.append(content);
@@ -263,19 +267,10 @@ $(document).ready(function () {
 
         const SAMPLE_ACTUAL = {};
         parsedConfig.workCenters.forEach(wc => {
-            const positionGroups = groupBucketsByPosition(wc.buckets);
-            const actualArr = [];
-            for (let row = 0; row < ROW_COUNT; row++) {
-                const buckets = positionGroups[row + 1] || [];
-                if (buckets.length > 1) {
-                    actualArr.push(buckets.map(b => Math.floor(b.capacity * (0.8 + Math.random() * 0.15))));
-                } else if (buckets.length === 1) {
-                    actualArr.push(Math.floor(buckets[0].capacity * (0.8 + Math.random() * 0.15)));
-                } else {
-                    actualArr.push(0);
-                }
-            }
-            SAMPLE_ACTUAL[wc.name] = { actual: actualArr };
+            SAMPLE_ACTUAL[wc.name] = {};
+            wc.buckets.forEach(bucket => {
+                SAMPLE_ACTUAL[wc.name][bucket.name] = Math.floor(bucket.capacity * (0.8 + Math.random() * 0.15));
+            });
         });
 
         updateActualValues(SAMPLE_ACTUAL);
@@ -287,6 +282,7 @@ $(document).ready(function () {
 
     window.AndonDashboard = {
         parseConfigurationData: parseConfigurationData,
+        parseActualData: parseActualData,
         initializeDashboard: initializeDashboard,
         updateActualValues: updateActualValues,
         updateHeader: updateHeader,
