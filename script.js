@@ -108,7 +108,7 @@ $(document).ready(function () {
         });
 
         // Define column order (standard order for consistent display)
-        const standardOrder = ['PLAN BOARD', 'ORDER PICKING', 'WELDING', 'NDT', 'HYDRO', 'EA1', 'CALIBRATION', 'FINAL ASSY', 'QUALITY', 'PACKING'];
+        const standardOrder = ['PLAN BOARD', 'ORDER PICKING', 'WELDING', 'HYDRO', 'NDT', 'EA1', 'CALIBRATION', 'FINAL ASSY', 'QUALITY', 'PACKING'];
         const columnOrder = standardOrder.filter(wc => columnOrderSet.has(wc));
 
         return {
