@@ -1,0 +1,22 @@
+{
+  "data": [
+    {
+      "workCenter": "CALIBRATION",
+      "bucketName": "LARGE",
+      "position": 3,
+      "capacity": 1
+    },
+    {
+      "workCenter": "CALIBRATION",
+      "bucketName": "MEDIUM",
+      "position": 2,
+      "capacity": 1
+    },
+    {
+      "workCenter": "EA1",
+      "bucketName": "LARGE",
+      "position": 3,
+      "capacity": 5
+    }
+  ]
+}
