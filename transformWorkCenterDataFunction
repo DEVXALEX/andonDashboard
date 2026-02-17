@@ -1,0 +1,33 @@
+function transformWorkCenterData(input) {
+    var result = {
+        workCenters: []
+    };
+
+    var workCenterMap = {};
+
+    for (var i = 0; i < input.WorkCenter.length; i++) {
+
+        var wcName = input.WorkCenter[i];
+        var bucketName = input.BucketName[i];
+        var capacity = input.Capacity[i];
+        var position = input.Position[i];
+
+        // If work center does not exist, create it
+        if (!workCenterMap[wcName]) {
+            workCenterMap[wcName] = {
+                name: wcName,
+                buckets: []
+            };
+            result.workCenters.push(workCenterMap[wcName]);
+        }
+
+        // Push bucket into correct work center
+        workCenterMap[wcName].buckets.push({
+            name: bucketName,
+            position: position,
+            capacity: capacity
+        });
+    }
+
+    return result;
+}
