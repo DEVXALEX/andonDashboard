@@ -25,8 +25,65 @@ $(document).ready(function () {
             });
         }
 
+<<<<<<< HEAD
         const standardOrder = ['PLAN BOARD', 'ORDER PICKING', 'WELDING', 'NDT', 'HYDRO', 'EA1', 'CALIBRATION', 'FINAL ASSY', 'QUALITY', 'PACKING'];
         const orderedNames = standardOrder.filter(wc => columnOrderSet.has(wc));
+=======
+        // Build configuration and capacity data for each work center
+        Object.keys(grouped).forEach(workCenter => {
+            const positions = grouped[workCenter];
+            const hasMultiCard = Object.values(positions).some(buckets => buckets.length > 1);
+
+            if (hasMultiCard) {
+                // Multi-card configuration
+                config[workCenter] = {
+                    isMultiCard: true,
+                    labels: []
+                };
+                capacityData[workCenter] = {
+                    capacity: []
+                };
+
+                // Build for each row (1-5)
+                for (let row = 1; row <= ROW_COUNT; row++) {
+                    const buckets = positions[row] || [];
+
+                    if (buckets.length > 0) {
+                        config[workCenter].labels[row - 1] = buckets.map(b => b.label);
+                        capacityData[workCenter].capacity[row - 1] = buckets.map(b => b.capacity);
+                    } else {
+                        config[workCenter].labels[row - 1] = [];
+                        capacityData[workCenter].capacity[row - 1] = [];
+                    }
+                }
+            } else {
+                // Single-card configuration
+                config[workCenter] = {
+                    labels: []
+                };
+                capacityData[workCenter] = {
+                    capacity: []
+                };
+
+                // Build for each row (1-5)
+                for (let row = 1; row <= ROW_COUNT; row++) {
+                    const buckets = positions[row] || [];
+
+                    if (buckets.length > 0) {
+                        config[workCenter].labels[row - 1] = buckets[0].label;
+                        capacityData[workCenter].capacity[row - 1] = buckets[0].capacity;
+                    } else {
+                        config[workCenter].labels[row - 1] = '';
+                        capacityData[workCenter].capacity[row - 1] = 0;
+                    }
+                }
+            }
+        });
+
+        // Define column order (standard order for consistent display)
+        const standardOrder = ['PLAN BOARD', 'ORDER PICKING', 'WELDING', 'HYDRO', 'NDT', 'EA1', 'CALIBRATION', 'FINAL ASSY', 'QUALITY', 'PACKING'];
+        const columnOrder = standardOrder.filter(wc => columnOrderSet.has(wc));
+>>>>>>> 829ffb195959520845b12f6e40873884ef14688d
 
         return {
             workCenters: orderedNames.map(name => ({

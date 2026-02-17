@@ -1,0 +1,19 @@
+{
+  "workCenters": [
+    {
+      "name": "Work Center A",
+      "buckets": [
+        {
+          "name": "Bucket 1",
+          "position": 1,
+          "capacity": 100
+        },
+        {
+          "name": "Bucket 2",
+          "position": 2,
+          "capacity": 150
+        }
+      ]
+    }
+  ]
+}
