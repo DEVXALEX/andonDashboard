@@ -1,57 +1,122 @@
 $(document).ready(function () {
     // ============================================
-    // CONFIGURATION: Static Labels (Constants)
+    // CONFIGURATION: Dynamic Configuration Variables
     // ============================================
-    const WORK_CENTER_CONFIG = {
-        planBoard: {
-            labels: ['SMALL', 'MEDIUM', 'LARGE', 'B28', 'SPARE']
-        },
-        orderPicking: {
-            labels: ['PICK 1 / 2', '', '', '', '']
-        },
-        welding: {
-            isMultiCard: true,
-            labels: [
-                ['SEFW', 'MANUAL'],
-                ['ROBOT', 'NDEFW'],
-                ['MANUAL'],
-                ['POLNE'],
-                ['ROBOT', 'MANUAL']
-            ]
-        },
-        ndt: {
-            labels: ['SMALL', '', 'LARGE', '', 'DYE PEN']
-        },
-        hydro: {
-            labels: ['SMALL 0 / 2', 'MEDIUM', 'LARGE', '', '']
-        },
-        ea1: {
-            labels: ['SMALL (1)', 'MEDIUM', 'LARGE', '', 'REP 3 / 6 *']
-        },
-        calibration: {
-            labels: ['SMALL (4)', 'MEDIUM (1)', 'LARGE (2)', '', '']
-        },
-        finalAssy: {
-            isMultiCard: true,
-            labels: [
-                ['O2'],
-                ['FA 7 / 0', 'SPARE 3 / 10'],
-                ['IBQ (2)'],
-                [],
-                []
-            ]
-        },
-        quality: {
-            labels: ['Q CERTS', 'QA VERIFY (3)', '', '', '']
-        },
-        packing: {
-            labels: ['PACK 2/2 (2)', '', 'SPARE 0 / 10', 'REP 1 / 6', '']
-        }
-    };
+    let WORK_CENTER_CONFIG = {};
+    let COLUMN_ORDER = [];
+    const ROW_COUNT = 5; // Standard row count
 
-    // Column order for rendering
-    const COLUMN_ORDER = ['planBoard', 'orderPicking', 'welding', 'ndt', 'hydro', 'ea1', 'calibration', 'finalAssy', 'quality', 'packing'];
-    const ROW_COUNT = 5; // SMALL, MEDIUM, LARGE, B28, SPARE
+    /**
+     * Parse AJAX configuration data and build work center configuration.
+     * Automatically detects multi-card cells when multiple buckets share the same Position.
+     * 
+     * @param {Object} data - AJAX response with WorkCenter, BucketName, Capacity, Position arrays
+     * @returns {Object} { config: WORK_CENTER_CONFIG, columnOrder: COLUMN_ORDER, capacityData: {} }
+     * 
+     * @example
+     * const ajaxData = {
+     *     WorkCenter: ["WELDING", "WELDING", "WELDING"],
+     *     BucketName: ["SEFW", "MANUAL", "ROBOT"],
+     *     Capacity: [4, 8, 6],
+     *     Position: [1, 1, 2]  // SEFW and MANUAL share position 1 -> multicard
+     * };
+     * const result = parseConfigurationData(ajaxData);
+     */
+    function parseConfigurationData(data) {
+        if (!data || !data.WorkCenter || !data.BucketName || !data.Capacity || !data.Position) {
+            console.error('Invalid AJAX data structure');
+            return null;
+        }
+
+        const config = {};
+        const capacityData = {};
+        const columnOrderSet = new Set();
+
+        // Group data by WorkCenter and Position
+        const grouped = {};
+
+        for (let i = 0; i < data.WorkCenter.length; i++) {
+            const workCenter = data.WorkCenter[i];
+            const bucketName = data.BucketName[i];
+            const capacity = data.Capacity[i];
+            const position = data.Position[i]; // 1-based position
+
+            columnOrderSet.add(workCenter);
+
+            if (!grouped[workCenter]) {
+                grouped[workCenter] = {};
+            }
+            if (!grouped[workCenter][position]) {
+                grouped[workCenter][position] = [];
+            }
+
+            grouped[workCenter][position].push({
+                label: bucketName,
+                capacity: capacity
+            });
+        }
+
+        // Build configuration and capacity data for each work center
+        Object.keys(grouped).forEach(workCenter => {
+            const positions = grouped[workCenter];
+            const hasMultiCard = Object.values(positions).some(buckets => buckets.length > 1);
+
+            if (hasMultiCard) {
+                // Multi-card configuration
+                config[workCenter] = {
+                    isMultiCard: true,
+                    labels: []
+                };
+                capacityData[workCenter] = {
+                    capacity: []
+                };
+
+                // Build for each row (1-5)
+                for (let row = 1; row <= ROW_COUNT; row++) {
+                    const buckets = positions[row] || [];
+
+                    if (buckets.length > 0) {
+                        config[workCenter].labels[row - 1] = buckets.map(b => b.label);
+                        capacityData[workCenter].capacity[row - 1] = buckets.map(b => b.capacity);
+                    } else {
+                        config[workCenter].labels[row - 1] = [];
+                        capacityData[workCenter].capacity[row - 1] = [];
+                    }
+                }
+            } else {
+                // Single-card configuration
+                config[workCenter] = {
+                    labels: []
+                };
+                capacityData[workCenter] = {
+                    capacity: []
+                };
+
+                // Build for each row (1-5)
+                for (let row = 1; row <= ROW_COUNT; row++) {
+                    const buckets = positions[row] || [];
+
+                    if (buckets.length > 0) {
+                        config[workCenter].labels[row - 1] = buckets[0].label;
+                        capacityData[workCenter].capacity[row - 1] = buckets[0].capacity;
+                    } else {
+                        config[workCenter].labels[row - 1] = '';
+                        capacityData[workCenter].capacity[row - 1] = 0;
+                    }
+                }
+            }
+        });
+
+        // Define column order (standard order for consistent display)
+        const standardOrder = ['PLAN BOARD', 'ORDER PICKING', 'WELDING', 'NDT', 'HYDRO', 'EA1', 'CALIBRATION', 'FINAL ASSY', 'QUALITY', 'PACKING'];
+        const columnOrder = standardOrder.filter(wc => columnOrderSet.has(wc));
+
+        return {
+            config: config,
+            columnOrder: columnOrder,
+            capacityData: capacityData
+        };
+    }
 
     // ============================================
     // DATA STORAGE: Runtime Variables
@@ -85,18 +150,28 @@ $(document).ready(function () {
     }
 
     /**
-     * Initialize capacity values from backend.
+     * Initialize capacity values and optionally configuration from backend.
      * Call this ONCE on page load.
      * 
-     * @param {Object} data - Work center data object with capacity arrays
-     * @example { planBoard: { capacity: [15, 20, 16] }, welding: { capacity: [[4, 0], [1, 8]] } }
+     * @param {Object} capacityObj - Work center capacity data object
+     * @param {Object} configObj - Optional: Work center configuration object
+     * @param {Array} columnOrderArr - Optional: Column order array
+     * @example initializeCapacity(capacityData, WORK_CENTER_CONFIG, ['WELDING', 'NDT'])
      */
-    function initializeCapacity(data) {
-        if (!data || typeof data !== 'object') {
+    function initializeCapacity(capacityObj, configObj, columnOrderArr) {
+        if (!capacityObj || typeof capacityObj !== 'object') {
             console.error('Invalid data object for capacity initialization');
             return;
         }
-        capacityData = data;
+        capacityData = capacityObj;
+
+        if (configObj) {
+            WORK_CENTER_CONFIG = configObj;
+        }
+        if (columnOrderArr && Array.isArray(columnOrderArr)) {
+            COLUMN_ORDER = columnOrderArr;
+        }
+
         renderDashboard();
     }
 
@@ -401,47 +476,98 @@ $(document).ready(function () {
     });
 
     // ============================================
-    // SAMPLE DATA - REMOVE THIS SECTION LATER
+    // SAMPLE DATA - Using AJAX structure format
     // ============================================
-    const SAMPLE_CAPACITY = {
-        planBoard: { capacity: [15, 20, 16, 15, 20] },
-        orderPicking: { capacity: [10, 0, 0, 0, 0] },
-        welding: { capacity: [[4, 8], [6, 8], [5], [3], [4, 6]] },
-        ndt: { capacity: [12, 0, 10, 0, 8] },
-        hydro: { capacity: [8, 10, 12, 0, 0] },
-        ea1: { capacity: [15, 12, 10, 0, 6] },
-        calibration: { capacity: [10, 8, 6, 0, 0] },
-        finalAssy: { capacity: [[5], [7, 10], [4], [], []] },
-        quality: { capacity: [8, 6, 0, 0, 0] },
-        packing: { capacity: [10, 0, 8, 6, 0] }
+    const SAMPLE_AJAX_CONFIG = {
+        "WorkCenter": [
+            "CALIBRATION", "CALIBRATION", "CALIBRATION",
+            "EA1", "EA1", "EA1", "EA1",
+            "FINAL ASSY", "FINAL ASSY", "FINAL ASSY",
+            "HYDRO", "HYDRO", "HYDRO",
+            "NDT", "NDT", "NDT",
+            "ORDER PICKING",
+            "PACKING",
+            "PLAN BOARD", "PLAN BOARD", "PLAN BOARD", "PLAN BOARD", "PLAN BOARD",
+            "QUALITY", "QUALITY",
+            "WELDING", "WELDING", "WELDING", "WELDING", "WELDING", "WELDING", "WELDING"
+        ],
+        "BucketName": [
+            "LARGE", "MEDIUM", "SMALL",
+            "LARGE", "MEDIUM", "REP", "SMALL",
+            "ASSY", "IBQ", "O2",
+            "LARGE", "MEDIUM", "SMALL",
+            "DYE PEN", "LARGE", "SMALL",
+            "PICKING",
+            "LINE 1/2",
+            "B2B", "LARGE", "MEDIUM", "SMALL", "SPARE",
+            "Q CERTS", "QA VERIF",
+            "LARGE MANUAL", "LARGE ROBOT", "MEDIUM MANUAL", "NGEFW", "POL/HE", "SEFW", "SMALL MANUAL"
+        ],
+        "Capacity": [
+            1, 1, 1,
+            5, 8, 6, 10,
+            6, 2, 2,
+            2, 2, 2,
+            1, 1, 3,
+            2,
+            20,
+            15, 15, 20, 15, 20,
+            2, 2,
+            4, 1, 4, 6, 2, 4, 4
+        ],
+        "Position": [
+            3, 2, 1,
+            3, 2, 4, 1,
+            1, 3, 2,
+            3, 2, 1,
+            4, 3, 1,
+            1,
+            1,
+            4, 3, 2, 1, 5,
+            1, 2,
+            3, 3, 2, 2, 4, 1, 1
+        ]
     };
 
-    const SAMPLE_ACTUAL = {
-        planBoard: { actual: [12, 18, 14, 16, 15] },
-        orderPicking: { actual: [8, 0, 0, 0, 0] },
-        welding: { actual: [[3, 7], [5, 9], [4], [3], [2, 4]] },
-        ndt: { actual: [10, 0, 11, 0, 5] },
-        hydro: { actual: [7, 9, 13, 0, 0] },
-        ea1: { actual: [14, 10, 8, 0, 4] },
-        calibration: { actual: [9, 7, 5, 0, 0] },
-        finalAssy: { actual: [[4], [6, 8], [3], [], []] },
-        quality: { actual: [7, 5, 0, 0, 0] },
-        packing: { actual: [9, 0, 6, 5, 0] }
-    };
+    // Parse configuration from AJAX data
+    const parsedConfig = parseConfigurationData(SAMPLE_AJAX_CONFIG);
 
-    const SAMPLE_HEADER = {
-        recordableDays: 1268,
-        ncCount: 8,
-        obqCount: 2,
-        targetCount: 23,
-        pastDueCount: 10,
-        builtCount: 42
-    };
+    if (parsedConfig) {
+        // Initialize with parsed configuration and capacity
+        initializeCapacity(parsedConfig.capacityData, parsedConfig.config, parsedConfig.columnOrder);
 
-    // Initialize with sample data
-    initializeCapacity(SAMPLE_CAPACITY);
-    updateActualValues(SAMPLE_ACTUAL);
-    updateHeader(SAMPLE_HEADER);
+        // Sample actual values (using same structure as capacity for demo)
+        const SAMPLE_ACTUAL = {};
+        Object.keys(parsedConfig.capacityData).forEach(workCenter => {
+            const cap = parsedConfig.capacityData[workCenter].capacity;
+            SAMPLE_ACTUAL[workCenter] = { actual: JSON.parse(JSON.stringify(cap)) }; // Deep copy
+
+            // Reduce actual values for demo purposes (80-95% of capacity)
+            if (Array.isArray(SAMPLE_ACTUAL[workCenter].actual[0])) {
+                // Multi-card
+                SAMPLE_ACTUAL[workCenter].actual = SAMPLE_ACTUAL[workCenter].actual.map(row =>
+                    row.map(val => Math.floor(val * (0.8 + Math.random() * 0.15)))
+                );
+            } else {
+                // Single-card
+                SAMPLE_ACTUAL[workCenter].actual = SAMPLE_ACTUAL[workCenter].actual.map(val =>
+                    Math.floor(val * (0.8 + Math.random() * 0.15))
+                );
+            }
+        });
+
+        updateActualValues(SAMPLE_ACTUAL);
+
+        const SAMPLE_HEADER = {
+            recordableDays: 1268,
+            ncCount: 8,
+            obqCount: 2,
+            targetCount: 23,
+            pastDueCount: 10,
+            builtCount: 42
+        };
+        updateHeader(SAMPLE_HEADER);
+    }
     // ============================================
     // END SAMPLE DATA
     // ============================================
@@ -457,6 +583,7 @@ $(document).ready(function () {
     // EXPOSE FUNCTIONS FOR AJAX CALLS
     // ============================================
     window.AndonDashboard = {
+        parseConfigurationData: parseConfigurationData,
         initializeCapacity: initializeCapacity,
         updateActualValues: updateActualValues,
         updateHeader: updateHeader,
