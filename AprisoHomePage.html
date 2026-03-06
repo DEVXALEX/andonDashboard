@@ -1,0 +1,109 @@
+    <!-- Header Section -->
+    <div class="header">
+        <div class="header-section">
+            <span class="days-recordable">DAYS W/O RECORDABLES = <span id="recordable-days"
+                    data-default="--">1266</span></span>
+        </div>
+        <div class="header-divider"></div>
+        <div class="header-section period-section">
+            <span class="period-label"><span id="p5-count" data-default="P-">P5</span>:</span>
+            <span class="period-metric clickable-metric" data-modal-type="NC">NC = <span id="nc-count"
+                    data-default="--">8</span></span>
+            <span class="period-metric-divider">/</span>
+            <span class="period-metric clickable-metric" data-modal-type="OBQ">OBQ = <span id="obq-count"
+                    data-default="--">0</span></span>
+        </div>
+        <div class="header-divider"></div>
+        <div class="header-section" data-modal-type="TARGET">
+            <span>TARGET: <span id="target-count" data-default="--">23</span></span>
+        </div>
+        <div class="header-divider"></div>
+        <div class="header-section" data-modal-type="PASTDUE">
+            <span>PAST DUE: <span id="pastdue-count" data-default="--">10</span></span>
+        </div>
+        <div class="header-divider"></div>
+        <div class="header-section" data-modal-type="BUILT">
+            <span>BUILT: <span id="built-count" data-default="--">42</span></span>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-container">
+        <table class="andon-table">
+            <thead>
+                <tr>
+                    <th>PLAN<br>BOARD</th>
+                    <th>ORDER<br>PICKING</th>
+                    <th>WELDING</th>
+                    <th>HYDRO</th>
+                    <th>NDT</th>
+                    <th>EA1</th>
+                    <th>CALIBRATION</th>
+                    <th>FINAL<br>ASSY</th>
+                    <th>QUALITY</th>
+                    <th>PACKING</th>
+                </tr>
+            </thead>
+            <tbody id="dashboard-body">
+                <!-- Rows will be generated dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer Section -->
+    <div class="footer">
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color bnc-free"></div>
+                <span>BNC FREE</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color c-almost-full"></div>
+                <span>C ALMOST FULL</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color c-full"></div>
+                <span>C FULL</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color c-exceeded"></div>
+                <span>C EXCEEDED</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color found"></div>
+                <span>(1) FOUND</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color special-process"></div>
+                <span>SPECIAL PROCESS</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color small-operational"></div>
+                <span>SMALL OPERATIONAL</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color small-idle"></div>
+                <span>SMALL IDLE</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color print-due"></div>
+                <span>* PRINT DUE ORDER</span>
+            </div>
+        </div>
+        <div class="footer-right">
+            <div class="time-display">NL-EDE TIME: <span id="nl-time" data-default="--:--">15:08</span></div>
+            <div class="refresh-time">REFRESHED <span id="refresh-time" data-default="-- MIN AGO">0 MIN AGO</span></div>
+        </div>
+        <div class="footer-buttons">
+            <button class="footer-btn red-btn" id="nc-btn" data-modal-type="NCHOLD">NC HOLD:<span id="nc-btn-val"></span></button>
+            <button class="footer-btn blue-btn" id="osp-btn" data-modal-type="OSP">OSP:<span id="osp-btn-val"></span></button>
+            <button class="footer-btn blue-btn" id="ci-btn" data-modal-type="CI">CI:<span id="ci-btn-val"></span></button>
+        </div>
+    </div>
+
+<script>
+var context = $Context;
+</script>
+<div data-flx-subop="Call_GenericPortalForm"/>
+<!--Example invocation of EMR_MME_Andon_FetchDashboardData. Works only in runtime. -->
+<!--Example invocation of EMR_MME_Andon_FetchDashboardData. Works only in runtime. -->
