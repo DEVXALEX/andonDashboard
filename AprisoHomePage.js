@@ -134,8 +134,8 @@ $(document).ready(function() {
 	//Function OverLoading with function Defined above
     function updateCardValues(actualData) {
         if (!actualData || !actualData.ActualWorkCenter) return;
-		console.log('UpdateCall')
-		console.log(actualData)
+		//console.log('UpdateCall')
+		//console.log(actualData)
         const actualMap = {};
         const len = actualData.ActualWorkCenter.length;
         for (let i = 0; i < len; i++) {
@@ -247,7 +247,11 @@ $(document).ready(function() {
     }
 
     function openPopup(dataFlag, column, label) {
-        context.outputs.Action = 'POPUP';
+	console.log(dataFlag)
+    	if(dataFlag == 'OBQ')
+			context.outputs.Action = 'OBQPOPUP';
+		else
+			context.outputs.Action = 'POPUP'
         context.outputs.DataFlag = dataFlag;
         context.outputs.DataWC = column;
         context.outputs.DataBucket = label;
@@ -283,27 +287,27 @@ $(document).ready(function() {
     function callAjax(context, flag) {
         var inputs = {};
         inputs.Route = flag;
-        console.log(flag)
+      //  console.log(flag)
         context.callOperation('EMR_MME_Andon_FetchDashboardData', inputs,
             function(outputs) {
-                console.log(outputs);
+           //     console.log(outputs);
                 //Operation outputs: WorkCenter, BucketName, Capacity, Position
                 if (flag == 'INITIAL') {
                     const parsedConfig = parseConfigurationData(outputs);
-					console.log('parsedConfig');
-                    console.log(parsedConfig);
+				//	console.log('parsedConfig');
+                //    console.log(parsedConfig);
                     if (parsedConfig) {
-                        console.log('here');
+                    //    console.log('here');
                         initializeDashboard(parsedConfig);
-                        console.log('here2');
+                    //    console.log('here2');
                     }
                 } else {
-					console.log('DataCall')
+				//	console.log('DataCall')
                     updateActualValues(outputs);
                 }
             },
             function(message) {
-                alert(message);
+               // alert(message);
             });
     }
 	// Till here
